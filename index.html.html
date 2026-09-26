@@ -55,15 +55,25 @@
         .alarm-box {
             background: #fef2f2;
             border: 1px solid #fecaca;
-            padding: 12px;
-            border-radius: 12px;
+            padding: 14px;
+            border-radius: 14px;
             margin-bottom: 20px;
+        }
+        .alarm-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            margin-bottom: 10px;
         }
         .alarm-box label { font-weight: bold; color: #991b1b; }
-        .alarm-box input { padding: 6px; border-radius: 6px; border: 1px solid #f87171; font-size: 16px; }
+        .alarm-box input[type="time"] { padding: 6px; border-radius: 6px; border: 1px solid #f87171; font-size: 16px; }
+        
+        .custom-audio-section {
+            border-top: 1px dashed #fca5a5;
+            padding-top: 10px;
+            font-size: 13px;
+            color: #7f1d1d;
+        }
 
         .btn {
             width: 100%;
@@ -120,10 +130,20 @@
         <p id="panchang-text">26 सितंबर 2026 | आश्विन शुक्ल पक्ष, पूर्णिमा</p>
     </div>
 
-    <!-- अलार्म टाइमर सेटिंग्स -->
+    <!-- अलार्म सेटिंग्स (ऑटो-सेव + कस्टम ऑडियो) -->
     <div class="alarm-box">
-        <label for="alarm-time">⏰ सुबह का अलार्म:</label>
-        <input type="time" id="alarm-time" value="06:00" onchange="setAlarm()">
+        <div class="alarm-row">
+            <label for="alarm-time">⏰ अलार्म समय:</label>
+            <input type="time" id="alarm-time" onchange="saveAlarmTime()">
+        </div>
+        
+        <!-- बेटी की आवाज़ या भजन अपलोड करने का सिस्टम -->
+        <div class="custom-audio-section">
+            <label>🎵 अलार्म टोन (बेटी की आवाज़ / भजन MP3):</label><br>
+            <input type="file" id="custom-audio-file" accept="audio/*" onchange="saveAudioFile(event)" style="margin-top: 6px; width: 100%;">
+            <audio id="audio-player" style="display:none;"></audio>
+            <p id="audio-status" style="margin: 4px 0 0 0; color: #16a34a; font-weight: bold;"></p>
+        </div>
     </div>
 
     <!-- 1. सुबह का बटन -->
@@ -151,9 +171,27 @@
 
 <script>
     let alarmTime = null;
-    let alarmInterval = null;
+    let customAudioData = null;
 
-    // 1. लाइव डिजिटल घड़ी और तिथि
+    // 1. लोड होते ही सेव किया हुआ अलार्म और ऑडियो वापस लाना
+    window.onload = function() {
+        const savedTime = localStorage.getItem('nitya_alarm_time');
+        if (savedTime) {
+            document.getElementById('alarm-time').value = savedTime;
+            alarmTime = savedTime;
+        }
+
+        const savedAudio = localStorage.getItem('nitya_custom_audio');
+        if (savedAudio) {
+            customAudioData = savedAudio;
+            document.getElementById('audio-player').src = savedAudio;
+            document.getElementById('audio-status').innerText = "✓ कस्टम ऑडियो सेव है";
+        }
+
+        updateClock();
+    };
+
+    // 2. लाइव घड़ी और अलार्म चेक
     function updateClock() {
         const now = new Date();
         const timeString = now.toLocaleTimeString('en-US', { hour12: true });
@@ -162,71 +200,85 @@
         document.getElementById('clock').innerText = timeString;
         document.getElementById('date-string').innerText = now.toLocaleDateString('hi-IN', dateOptions);
 
-        // अलार्म चेकिंग
+        // अलार्म बजाना
         const currentHoursMinutes = now.toTimeString().substring(0, 5);
         if (alarmTime && currentHoursMinutes === alarmTime && now.getSeconds() === 0) {
             triggerAlarm();
         }
     }
     setInterval(updateClock, 1000);
-    updateClock();
 
-    function setAlarm() {
+    // 3. अलार्म टाइम याद (Save) रखना
+    function saveAlarmTime() {
         alarmTime = document.getElementById('alarm-time').value;
-        speakText("सुबह " + alarmTime + " बजे का अलार्म सेट कर दिया गया है।");
+        localStorage.setItem('nitya_alarm_time', alarmTime);
+        speakText("सुबह " + alarmTime + " बजे का अलार्म सुरक्षित कर दिया गया है।");
     }
 
+    // 4. बेटी/परिवार की रिकॉर्डिंग या भजन सेव करना
+    function saveAudioFile(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customAudioData = e.target.result;
+                document.getElementById('audio-player').src = customAudioData;
+                localStorage.setItem('nitya_custom_audio', customAudioData);
+                document.getElementById('audio-status').innerText = "✓ " + file.name + " सेव हो गया!";
+                speakText("आपकी आवाज़ की फ़ाइल अलार्म के लिए सेट हो गई है।");
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // 5. अलार्म ट्रिगर होना
     function triggerAlarm() {
-        speakText("शुभ प्रभात! उठने का समय हो गया है। नित्य में आपका स्वागत है।");
+        const player = document.getElementById('audio-player');
+        if (customAudioData) {
+            player.play(); // कस्टम आवाज़/भजन बजेगा
+        } else {
+            speakText("शुभ प्रभात! उठने का समय हो गया है। नित्य में आपका स्वागत है।");
+        }
     }
 
-    // प्राकृतिक वॉइस सिंथेसिस (Hindi Voice Selection)
+    // प्राकृतिक हिंदी आवाज़
     function speakText(text) {
-        window.speechSynthesis.cancel(); // पुरानी वॉइस रोकें
+        window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
         msg.lang = 'hi-IN';
-        msg.rate = 0.9; // थोड़ी शांत और धीमी गति
-        msg.pitch = 1.0;
+        msg.rate = 0.9;
 
-        // हिंदी वॉइस ऑटो-डिटेक्ट
         const voices = window.speechSynthesis.getVoices();
         const hindiVoice = voices.find(voice => voice.lang.includes('hi') || voice.lang.includes('HI'));
-        if (hindiVoice) {
-            msg.voice = hindiVoice;
-        }
+        if (hindiVoice) msg.voice = hindiVoice;
 
         window.speechSynthesis.speak(msg);
     }
 
-    // 2. मैं उठ गया बटन
+    // 6. मैं उठ गया (अलार्म बंद करें + पंचांग सुनें)
     function stopAlarmAndSpeak() {
+        const player = document.getElementById('audio-player');
+        player.pause();
+        player.currentTime = 0;
+
         const panchangText = document.getElementById('panchang-text').innerText;
-        const greeting = "शुभ प्रभात! आप उठ चुके हैं। आज का पंचांग है: " + panchangText + "। आपका दिन मंगलमय और ऊर्जावान रहे।";
-        speakText(greeting);
+        speakText("शुभ प्रभात! आप उठ चुके हैं। आज का पंचांग है: " + panchangText + "। आपका दिन मंगलमय रहे।");
     }
 
-    // 3. QuickNewsGPT समाचार
     function playNews() {
         speakText("QuickNewsGPT से आपके आज के मुख्य समाचार प्रस्तुत हैं।");
     }
 
-    // 4. संध्या आरती
     function playAarti() {
         speakText("संध्या आरती का समय हो चुका है। मन को शांत करके इष्टदेव का ध्यान करें। ओम जय जगदीश हरे...");
     }
 
-    // 5. रात्रि संवाद
     function startNightReflection() {
         const answer = prompt("आज का दिन कैसा रहा? आज आपने ऐसा क्या किया जिससे आपको खुशी मिली?");
         if (answer) {
             speakText("आपकी बात सुनकर बहुत अच्छा लगा। दिनभर के प्रयासों के बाद अब विश्राम का समय है। शुभ रात्रि!");
         }
     }
-
-    // वॉइस लोड होना सुनिश्चित करना
-    window.speechSynthesis.onvoiceschanged = function() {
-        window.speechSynthesis.getVoices();
-    };
 </script>
 
 </body>
