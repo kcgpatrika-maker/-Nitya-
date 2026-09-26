@@ -3,70 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>नित्य - Nitya</title>
+    <title>नित्य - Nitya Companion</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
             margin: 0;
             padding: 20px;
-            color: #333;
+            color: #292524;
+            min-height: 100vh;
         }
         .container {
             max-width: 450px;
             margin: 0 auto;
             background: #ffffff;
-            border-radius: 20px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            padding: 20px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            padding: 24px;
+            border: 1px solid #fde68a;
         }
         .header {
             text-align: center;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+            border-bottom: 2px dashed #fcd34d;
+            padding-bottom: 15px;
             margin-bottom: 20px;
         }
         .header h1 {
-            color: #d9534f;
+            color: #c2410c;
             margin: 0;
+            font-size: 32px;
+            letter-spacing: 1px;
+        }
+        .time-display {
             font-size: 28px;
+            font-weight: bold;
+            color: #b45309;
+            margin-top: 8px;
+            font-family: monospace;
         }
         .card {
-            background: #fff8f0;
-            border-left: 5px solid #f0ad4e;
-            padding: 15px;
-            border-radius: 10px;
+            background: #fffbeb;
+            border-left: 6px solid #f59e0b;
+            padding: 16px;
+            border-radius: 14px;
             margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
         }
-        .card h3 { margin: 0 0 5px 0; color: #d9534f; }
+        .card h3 { margin: 0 0 6px 0; color: #92400e; font-size: 18px; }
+        .card p { margin: 0; font-size: 15px; color: #78350f; }
+        
+        .alarm-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .alarm-box label { font-weight: bold; color: #991b1b; }
+        .alarm-box input { padding: 6px; border-radius: 6px; border: 1px solid #f87171; font-size: 16px; }
+
         .btn {
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 16px;
+            font-size: 17px;
             font-weight: bold;
             color: #fff;
             cursor: pointer;
-            margin-bottom: 15px;
-            transition: 0.3s;
+            margin-bottom: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        .btn-green { background-color: #5cb85c; }
-        .btn-green:hover { background-color: #4cae4c; }
-        .btn-blue { background-color: #0275d8; }
-        .btn-blue:hover { background-color: #025aa5; }
+        .btn:active { transform: scale(0.98); }
+        .btn-green { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
+        .btn-blue { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+        
         .grid {
             display: flex;
-            gap: 10px;
+            gap: 12px;
         }
         .sub-card {
             flex: 1;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 10px;
+            padding: 16px;
+            background: #fafaf9;
+            border-radius: 14px;
             text-align: center;
-            border: 1px solid #ddd;
+            border: 1px solid #e7e5e4;
+            cursor: pointer;
+            transition: 0.2s;
         }
+        .sub-card:hover { background: #f5f5f4; }
+        .sub-card h4 { margin: 0 0 6px 0; color: #d97706; font-size: 16px; }
+        .sub-card small { color: #78716c; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -74,13 +110,20 @@
 <div class="container">
     <div class="header">
         <h1>नित्य (Nitya)</h1>
-        <p style="margin: 5px 0 0 0; color: #666;">आपका दैनिक सहचर</p>
+        <div class="time-display" id="clock">00:00:00 AM</div>
+        <div id="date-string" style="color: #a16207; margin-top: 4px; font-weight: 500;"></div>
     </div>
 
     <!-- आज का पंचांग -->
     <div class="card">
         <h3>आज का पंचांग</h3>
-        <p id="panchang-text" style="margin: 0; font-size: 15px;">26 सितंबर 2026 | आश्विन शुक्ल पक्ष, पूर्णिमा</p>
+        <p id="panchang-text">26 सितंबर 2026 | आश्विन शुक्ल पक्ष, पूर्णिमा</p>
+    </div>
+
+    <!-- अलार्म टाइमर सेटिंग्स -->
+    <div class="alarm-box">
+        <label for="alarm-time">⏰ सुबह का अलार्म:</label>
+        <input type="time" id="alarm-time" value="06:00" onchange="setAlarm()">
     </div>
 
     <!-- 1. सुबह का बटन -->
@@ -90,59 +133,100 @@
 
     <!-- 2. समाचार का बटन -->
     <button class="btn btn-blue" onclick="playNews()">
-        📰 ताज़ा समाचार सुनें (QuickNewsGPT)
+        📰 ताज़ा समाचार (QuickNewsGPT)
     </button>
 
     <!-- 3. शाम और रात का सेक्शन -->
     <div class="grid">
         <div class="sub-card" onclick="playAarti()">
-            <h4 style="margin: 0 0 5px 0; color: #f0ad4e;">🪔 संध्या आरती</h4>
-            <small>इष्टदेव दर्शन व मंत्र</small>
+            <h4>🪔 संध्या आरती</h4>
+            <small>दर्शन व मंत्र पाठ</small>
         </div>
         <div class="sub-card" onclick="startNightReflection()">
-            <h4 style="margin: 0 0 5px 0; color: #337ab7;">🌙 रात्रि संवाद</h4>
+            <h4>🌙 रात्रि संवाद</h4>
             <small>AI आत्म-विश्लेषण</small>
         </div>
     </div>
 </div>
 
 <script>
-    // 1. बोलकर पंचांग सुनाने का लॉजिक
-    function stopAlarmAndSpeak() {
-        const panchangText = document.getElementById('panchang-text').innerText;
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = "शुभ प्रभात! आप उठ चुके हैं। आज का पंचांग है: " + panchangText;
-        msg.lang = 'hi-IN';
-        window.speechSynthesis.speak(msg);
-    }
+    let alarmTime = null;
+    let alarmInterval = null;
 
-    // 2. QuickNewsGPT से समाचार सुनाने का लॉजिक
-    function playNews() {
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = "अब आपके अपने क्विक न्यूज़ जीपीटी से आज के मुख्य समाचार प्रस्तुत हैं...";
-        msg.lang = 'hi-IN';
-        window.speechSynthesis.speak(msg);
-        // भविष्य में यहाँ आपके QuickNewsGPT API की लाइव ऑडियो/टेक्स्ट फ़ीड कनेक्ट होगी
-    }
+    // 1. लाइव डिजिटल घड़ी और तिथि
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour12: true });
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        
+        document.getElementById('clock').innerText = timeString;
+        document.getElementById('date-string').innerText = now.toLocaleDateString('hi-IN', dateOptions);
 
-    // 3. शाम की आरती
-    function playAarti() {
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = "संध्या आरती का समय हो चुका है। ओम जय जगदीश हरे...";
-        msg.lang = 'hi-IN';
-        window.speechSynthesis.speak(msg);
-    }
-
-    // 4. रात का AI संवाद
-    function startNightReflection() {
-        const answer = prompt("आज आपसे क्या अच्छा हुआ या आज आपने क्या नया किया?");
-        if (answer) {
-            const msg = new SpeechSynthesisUtterance();
-            msg.text = "बहुत बढ़िया! आपके इस अच्छे काम के लिए मुझे आप पर गर्व है। शुभ रात्रि!";
-            msg.lang = 'hi-IN';
-            window.speechSynthesis.speak(msg);
+        // अलार्म चेकिंग
+        const currentHoursMinutes = now.toTimeString().substring(0, 5);
+        if (alarmTime && currentHoursMinutes === alarmTime && now.getSeconds() === 0) {
+            triggerAlarm();
         }
     }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function setAlarm() {
+        alarmTime = document.getElementById('alarm-time').value;
+        speakText("सुबह " + alarmTime + " बजे का अलार्म सेट कर दिया गया है।");
+    }
+
+    function triggerAlarm() {
+        speakText("शुभ प्रभात! उठने का समय हो गया है। नित्य में आपका स्वागत है।");
+    }
+
+    // प्राकृतिक वॉइस सिंथेसिस (Hindi Voice Selection)
+    function speakText(text) {
+        window.speechSynthesis.cancel(); // पुरानी वॉइस रोकें
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'hi-IN';
+        msg.rate = 0.9; // थोड़ी शांत और धीमी गति
+        msg.pitch = 1.0;
+
+        // हिंदी वॉइस ऑटो-डिटेक्ट
+        const voices = window.speechSynthesis.getVoices();
+        const hindiVoice = voices.find(voice => voice.lang.includes('hi') || voice.lang.includes('HI'));
+        if (hindiVoice) {
+            msg.voice = hindiVoice;
+        }
+
+        window.speechSynthesis.speak(msg);
+    }
+
+    // 2. मैं उठ गया बटन
+    function stopAlarmAndSpeak() {
+        const panchangText = document.getElementById('panchang-text').innerText;
+        const greeting = "शुभ प्रभात! आप उठ चुके हैं। आज का पंचांग है: " + panchangText + "। आपका दिन मंगलमय और ऊर्जावान रहे।";
+        speakText(greeting);
+    }
+
+    // 3. QuickNewsGPT समाचार
+    function playNews() {
+        speakText("QuickNewsGPT से आपके आज के मुख्य समाचार प्रस्तुत हैं।");
+    }
+
+    // 4. संध्या आरती
+    function playAarti() {
+        speakText("संध्या आरती का समय हो चुका है। मन को शांत करके इष्टदेव का ध्यान करें। ओम जय जगदीश हरे...");
+    }
+
+    // 5. रात्रि संवाद
+    function startNightReflection() {
+        const answer = prompt("आज का दिन कैसा रहा? आज आपने ऐसा क्या किया जिससे आपको खुशी मिली?");
+        if (answer) {
+            speakText("आपकी बात सुनकर बहुत अच्छा लगा। दिनभर के प्रयासों के बाद अब विश्राम का समय है। शुभ रात्रि!");
+        }
+    }
+
+    // वॉइस लोड होना सुनिश्चित करना
+    window.speechSynthesis.onvoiceschanged = function() {
+        window.speechSynthesis.getVoices();
+    };
 </script>
 
 </body>
