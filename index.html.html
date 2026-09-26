@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>नित्य - Nitya</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #d9534f;
+            margin: 0;
+            font-size: 28px;
+        }
+        .card {
+            background: #fff8f0;
+            border-left: 5px solid #f0ad4e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .card h3 { margin: 0 0 5px 0; color: #d9534f; }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+        .btn-green { background-color: #5cb85c; }
+        .btn-green:hover { background-color: #4cae4c; }
+        .btn-blue { background-color: #0275d8; }
+        .btn-blue:hover { background-color: #025aa5; }
+        .grid {
+            display: flex;
+            gap: 10px;
+        }
+        .sub-card {
+            flex: 1;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>नित्य (Nitya)</h1>
+        <p style="margin: 5px 0 0 0; color: #666;">आपका दैनिक सहचर</p>
+    </div>
+
+    <!-- आज का पंचांग -->
+    <div class="card">
+        <h3>आज का पंचांग</h3>
+        <p id="panchang-text" style="margin: 0; font-size: 15px;">26 सितंबर 2026 | आश्विन शुक्ल पक्ष, पूर्णिमा</p>
+    </div>
+
+    <!-- 1. सुबह का बटन -->
+    <button class="btn btn-green" onclick="stopAlarmAndSpeak()">
+        🌅 मैं उठ गया (Stop Alarm & Panchang)
+    </button>
+
+    <!-- 2. समाचार का बटन -->
+    <button class="btn btn-blue" onclick="playNews()">
+        📰 ताज़ा समाचार सुनें (QuickNewsGPT)
+    </button>
+
+    <!-- 3. शाम और रात का सेक्शन -->
+    <div class="grid">
+        <div class="sub-card" onclick="playAarti()">
+            <h4 style="margin: 0 0 5px 0; color: #f0ad4e;">🪔 संध्या आरती</h4>
+            <small>इष्टदेव दर्शन व मंत्र</small>
+        </div>
+        <div class="sub-card" onclick="startNightReflection()">
+            <h4 style="margin: 0 0 5px 0; color: #337ab7;">🌙 रात्रि संवाद</h4>
+            <small>AI आत्म-विश्लेषण</small>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. बोलकर पंचांग सुनाने का लॉजिक
+    function stopAlarmAndSpeak() {
+        const panchangText = document.getElementById('panchang-text').innerText;
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = "शुभ प्रभात! आप उठ चुके हैं। आज का पंचांग है: " + panchangText;
+        msg.lang = 'hi-IN';
+        window.speechSynthesis.speak(msg);
+    }
+
+    // 2. QuickNewsGPT से समाचार सुनाने का लॉजिक
+    function playNews() {
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = "अब आपके अपने क्विक न्यूज़ जीपीटी से आज के मुख्य समाचार प्रस्तुत हैं...";
+        msg.lang = 'hi-IN';
+        window.speechSynthesis.speak(msg);
+        // भविष्य में यहाँ आपके QuickNewsGPT API की लाइव ऑडियो/टेक्स्ट फ़ीड कनेक्ट होगी
+    }
+
+    // 3. शाम की आरती
+    function playAarti() {
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = "संध्या आरती का समय हो चुका है। ओम जय जगदीश हरे...";
+        msg.lang = 'hi-IN';
+        window.speechSynthesis.speak(msg);
+    }
+
+    // 4. रात का AI संवाद
+    function startNightReflection() {
+        const answer = prompt("आज आपसे क्या अच्छा हुआ या आज आपने क्या नया किया?");
+        if (answer) {
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = "बहुत बढ़िया! आपके इस अच्छे काम के लिए मुझे आप पर गर्व है। शुभ रात्रि!";
+            msg.lang = 'hi-IN';
+            window.speechSynthesis.speak(msg);
+        }
+    }
+</script>
+
+</body>
+</html>
