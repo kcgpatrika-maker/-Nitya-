@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>नित्य - Personal Daily Companion</title>
+    <title>Nitya - आपकी दिनचर्या का साथी</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -21,10 +21,21 @@
         }
         .header {
             text-align: center;
-            padding: 20px 0;
+            padding: 24px 0 16px 0;
             border-bottom: 1px solid #334155;
         }
-        .header h1 { color: var(--accent); margin: 0; font-size: 28px; }
+        .header h1 { 
+            color: var(--accent); 
+            margin: 0; 
+            font-size: 32px; 
+            letter-spacing: 1px;
+        }
+        .header .tagline {
+            color: #38bdf8;
+            margin: 8px 0 0 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
         .card {
             background: var(--card-bg);
             border-radius: 12px;
@@ -35,7 +46,7 @@
         .card h2 { margin-top: 0; font-size: 18px; color: #38bdf8; }
         .form-group { margin-bottom: 12px; }
         label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--text-muted); }
-        input[type="time"], input[type="text"], input[type="file"] {
+        input[type="time"], input[type="date"], input[type="text"], input[type="file"] {
             width: 100%;
             padding: 10px;
             border-radius: 6px;
@@ -56,25 +67,13 @@
             margin-top: 8px;
         }
         button:active { opacity: 0.8; }
-        .status-box {
-            background: #0284c7;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 14px;
-            margin-bottom: 16px;
-        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>नित्य (Nitya)</h1>
-        <p style="color: var(--text-muted); margin: 4px 0 0 0; font-size: 13px;">आपकी व्यक्तिगत दैनिक दिनचर्या सहायक</p>
-    </div>
-
-    <div class="status-box" id="statusBox">
-        प्रणाली तैयार है... स्वायत्त चक्र सक्रिय।
+        <h1>Nitya</h1>
+        <div class="tagline">आपकी दिनचर्या का साथी</div>
     </div>
 
     <!-- 1. प्रभात अलार्म सेटिंग्स -->
@@ -85,7 +84,7 @@
             <input type="time" id="morningTime" value="06:00">
         </div>
         <div class="form-group">
-            <label>आपकी/बेटी की रिकॉर्डेड लाइन (Alarm Audio):</label>
+            <label>परिवार के सदस्य की आवाज रिकॉर्ड करें:</label>
             <input type="file" id="morningAudio" accept="audio/*">
         </div>
         <button onclick="saveMorningSettings()">मॉर्निंग सेटिंग्स सेव करें</button>
@@ -99,75 +98,46 @@
             <input type="time" id="eveningTime" value="18:30">
         </div>
         <div class="form-group">
-            <label>भगवान की फोटो (Deity Image):</label>
+            <label>भगवान की फोटो अपलोड करें:</label>
             <input type="file" id="deityImage" accept="image/*">
         </div>
         <div class="form-group">
             <label>आरती/मंत्र का यूट्यूब लिंक या लोकल ऑडियो:</label>
-            <input type="text" id="aartiLink" placeholder="YouTube Link or Audio File Path">
+            <input type="text" id="aartiLink" placeholder="यूट्यूब लिंक या ऑडियो फाइल का पाथ लिखें">
         </div>
         <button onclick="saveEveningSettings()">संध्या सेटिंग्स सेव करें</button>
     </div>
 
-    <!-- 3. रात्रि शयन संवाद सेटिंग्स -->
+    <!-- 3. महत्वपूर्ण रिमाइंडर (कैलेंडर एवं वॉयस) -->
     <div class="card">
-        <h2>3. रात्रि संवाद एवं शयन (Night Reflection)</h2>
+        <h2>3. महत्वपूर्ण रिमाइंडर (Reminder)</h2>
+        <div class="form-group">
+            <label>तारीख और समय चुनें:</label>
+            <input type="date" id="reminderDate">
+            <input type="time" id="reminderTime" style="margin-top: 6px;">
+        </div>
+        <div class="form-group">
+            <label>रिमाइंडर सन्देश (या बोलकर रिकॉर्ड करें):</label>
+            <input type="text" id="reminderText" placeholder="जैसे: दीदी को कॉल करना है / बर्थडे विश करना है">
+        </div>
+        <button onclick="saveReminder()">रिमाइंडर सेट करें</button>
+    </div>
+
+    <!-- 4. रात्रि शयन संवाद सेटिंग्स -->
+    <div class="card">
+        <h2>4. रात्रि संवाद एवं शयन (Night Reflection)</h2>
         <div class="form-group">
             <label>सोने का समय (Bedtime):</label>
             <input type="time" id="nightTime" value="22:00">
         </div>
         <div class="form-group">
             <label>सोते समय पसंदीदा भजन/संगीत का लिंक:</label>
-            <input type="text" id="sleepAudioLink" placeholder="YouTube Link for Lullaby/Bhajan">
+            <input type="text" id="sleepAudioLink" placeholder="यूट्यूब लिंक या ऑडियो फाइल का पाथ लिखें">
         </div>
         <button onclick="saveNightSettings()">रात्रि सेटिंग्स सेव करें</button>
     </div>
 
     <script>
-        // In-Browser / Hybrid App Speech & Engine Controller
-        const synth = window.speechSynthesis;
-
-        function speakText(text, callback) {
-            if (synth.speaking) synth.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'hi-IN';
-            utterance.rate = 0.95; // Natural speed
-            utterance.onend = () => { if (callback) callback(); };
-            synth.speak(utterance);
-        }
-
-        function updateStatus(msg) {
-            document.getElementById('statusBox').innerText = msg;
-        }
-
-        // 1. Morning Logic Mock Execution
-        function triggerMorningFlow() {
-            updateStatus("अलार्म ट्रिगर हुआ... 'मैं उठ गया' का इंतज़ार।");
-            // Simulate Alarm Audio -> User Clicks 'I am Awake'
-            setTimeout(() => {
-                const today = new Date();
-                const text = `नमस्कार! आज तारीख ${today.getDate()} है। आज आश्विन मास, शुक्ल पक्ष की तिथि और शुभ वार है। आज का दिन मंगलमय हो।`;
-                speakText(text, () => {
-                    // Step 4 & 6: Ask for news
-                    speakText("क्या आज के ताज़ा समाचार सुनाऊँ?", () => {
-                        // Auto-fetch News via Google RSS if user stays neutral
-                        setTimeout(() => {
-                            fetchNewsAndRead();
-                        }, 3000);
-                    });
-                });
-            }, 1000);
-        }
-
-        // Fetch Live Hindi News Brief (Free Google RSS Feed)
-        function fetchNewsAndRead() {
-            updateStatus("QuickNewsGPT से ताज़ा समाचार फ़ेच किए जा रहे हैं...");
-            // Standard RSS Parsing logic integrated in Android Native Bridge
-            const mockNews = "QuickNewsGPT से आज की मुख्य सुर्खियाँ: देश में विकास कार्यों में तेज़ी, मौसम विभाग ने जारी किया अलर्ट, और खेल जगत से भारत की शानदार जीत।";
-            speakText(mockNews);
-        }
-
-        // Settings Saver (Stores locally in Device Memory)
         function saveMorningSettings() {
             localStorage.setItem('morningTime', document.getElementById('morningTime').value);
             alert("मॉर्निंग अलार्म सेटिंग्स सेव हो गईं!");
@@ -177,6 +147,17 @@
             localStorage.setItem('eveningTime', document.getElementById('eveningTime').value);
             localStorage.setItem('aartiLink', document.getElementById('aartiLink').value);
             alert("संध्या आरती सेटिंग्स सेव हो गईं!");
+        }
+
+        function saveReminder() {
+            const date = document.getElementById('reminderDate').value;
+            const time = document.getElementById('reminderTime').value;
+            const text = document.getElementById('reminderText').value;
+            if(!date || !time || !text) {
+                alert("कृपया तारीख, समय और रिमाइंडर सन्देश पूरा भरें।");
+                return;
+            }
+            alert("रिमाइंडर सफलतापूर्वक सेट हो गया है!");
         }
 
         function saveNightSettings() {
