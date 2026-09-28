@@ -1,0 +1,19 @@
+{
+  "appId": "com.nitya.assistant",
+  "appName": "Nitya",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#F59E0B",
+      "sound": "beep.wav"
+    },
+    "BackgroundRunner": {
+      "label": "com.nitya.assistant.background",
+      "src": "background.js",
+      "event": "alarmTriggered",
+      "repeat": true
+    }
+  }
+}
