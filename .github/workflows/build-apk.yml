@@ -1,4 +1,4 @@
-name: Build Nitya Android APK
+name: Build and Release Nitya Direct APK
 
 on:
   push:
@@ -56,10 +56,17 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+      - name: Rename APK File
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk Nitya-Test.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: Nitya-Test-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          tag_name: v1.0.${{ github.run_number }}
+          name: Nitya Test Release v1.0.${{ github.run_number }}
+          files: Nitya-Test.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
