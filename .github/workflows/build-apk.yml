@@ -24,10 +24,17 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Create Web Asset Directory
+      - name: Locate and Create Web Asset Directory
         run: |
           mkdir -p www
-          cp index.html www/index.html
+          FILE=$(find . -maxdepth 2 -iname "index.html" | head -n 1)
+          if [ -n "$FILE" ]; then
+            echo "Found HTML file at: $FILE"
+            cp "$FILE" www/index.html
+          else
+            echo "Error: index.html file not found!"
+            exit 1
+          fi
 
       - name: Initialize Capacitor
         run: |
