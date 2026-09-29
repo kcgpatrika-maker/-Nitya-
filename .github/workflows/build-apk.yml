@@ -22,7 +22,7 @@ jobs:
       - name: Install Capacitor & Dependencies
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5
 
       - name: Locate and Create Web Asset Directory
         run: |
@@ -40,9 +40,11 @@ jobs:
         run: |
           npx cap init Nitya com.nitya.assistant --web-dir www
 
-      - name: Add Android Platform
+      - name: Add Android Platform & Sync
         run: |
           npx cap add android
+          npx cap copy android
+          npx cap sync android
 
       - name: Setup Java JDK
         uses: actions/setup-java@v3
@@ -54,7 +56,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
