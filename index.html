@@ -24,18 +24,19 @@
         }
         .header {
             text-align: center;
-            padding: 20px 0 16px 0;
+            padding: 24px 0 16px 0;
             border-bottom: 1px solid #334155;
         }
         .header h1 { 
             color: var(--accent); 
             margin: 0; 
-            font-size: 30px; 
+            font-size: 32px; 
+            letter-spacing: 1px;
         }
         .header .tagline {
             color: #38bdf8;
-            margin: 6px 0 0 0;
-            font-size: 18px;
+            margin: 8px 0 0 0;
+            font-size: 20px;
             font-weight: 600;
         }
         .pwa-banner {
@@ -67,7 +68,7 @@
         .card h2 { margin-top: 0; font-size: 18px; color: #38bdf8; }
         .form-group { margin-bottom: 12px; }
         label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--text-muted); }
-        input[type="time"], input[type="date"], input[type="text"] {
+        input[type="time"], input[type="date"], input[type="text"], input[type="file"] {
             width: 100%;
             padding: 10px;
             border-radius: 6px;
@@ -88,16 +89,19 @@
             color: #000;
             width: 100%;
             margin-top: 8px;
+            padding: 12px 20px;
         }
         button.rec-btn {
             background: #ef4444;
             color: white;
             margin-bottom: 8px;
+            width: 100%;
         }
         button.stop-btn {
             background: #22c55e;
             color: white;
             margin-bottom: 8px;
+            width: 100%;
             display: none;
         }
         .reminder-item {
@@ -113,11 +117,11 @@
         .delete-btn {
             background: #dc2626;
             color: white;
-            padding: 4px 8px;
+            padding: 6px 10px;
             font-size: 12px;
             border-radius: 4px;
         }
-        audio { width: 100%; margin-top: 8px; }
+        audio, img.preview { width: 100%; margin-top: 8px; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -141,9 +145,12 @@
             <input type="time" id="morningTime" value="06:00">
         </div>
         <div class="form-group">
-            <label>परिवार के सदस्य की आवाज रिकॉर्ड करें:</label>
-            <button id="startRec" class="rec-btn" onclick="startRecording()">🎤 रिकॉर्डिंग शुरू करें</button>
-            <button id="stopRec" class="stop-btn" onclick="stopRecording()">⏹️ रिकॉर्डिंग रोकें</button>
+            <label>परिवार के सदस्य की आवाज (ऑडियो फाइल चुनें या सीधे रिकॉर्ड करें):</label>
+            <input type="file" id="morningAudio" accept="audio/*" onchange="loadAudioFile(event)">
+            <div style="margin-top: 10px;">
+                <button id="startRec" class="rec-btn" onclick="startRecording()">🎤 आवाज रिकॉर्ड करें</button>
+                <button id="stopRec" class="stop-btn" onclick="stopRecording()">⏹️ रिकॉर्डिंग रोकें व सहेजें</button>
+            </div>
             <audio id="audioPreview" controls style="display:none;"></audio>
         </div>
         <button class="save-btn" onclick="saveMorningSettings()">मॉर्निंग सेटिंग्स सेव करें</button>
@@ -157,33 +164,34 @@
             <input type="time" id="eveningTime" value="18:30">
         </div>
         <div class="form-group">
-            <label>आरती/भजन का यूट्यूब लिंक या MP3 लिंक:</label>
-            <input type="text" id="aartiLink" placeholder="https://www.youtube.com/watch?v=...">
+            <label>भगवान की फोटो अपलोड करें:</label>
+            <input type="file" id="deityImage" accept="image/*" onchange="previewDeityImage(event)">
+            <img id="deityPreview" class="preview" style="display:none;" alt="भगवान की फोटो">
+        </div>
+        <div class="form-group">
+            <label>आरती/मंत्र का यूट्यूब लिंक या लोकल ऑडियो:</label>
+            <input type="text" id="aartiLink" placeholder="यूट्यूब लिंक या ऑडियो फाइल का पाथ लिखें">
         </div>
         <button class="save-btn" onclick="saveEveningSettings()">संध्या सेटिंग्स सेव करें</button>
     </div>
 
-    <!-- 3. महत्वपूर्ण रिमाइंडर (Multiple Reminders) -->
+    <!-- 3. महत्वपूर्ण रिमाइंडर -->
     <div class="card">
-        <h2>3. महत्वपूर्ण रिमाइंडर (Reminders)</h2>
+        <h2>3. महत्वपूर्ण रिमाइंडर (Reminder)</h2>
         <div class="form-group">
             <label>तारीख और समय चुनें:</label>
-
-            <div style="display: flex; gap: 8px;">
-                <input type="date" id="reminderDate">
-                <input type="time" id="reminderTime">
-            </div>
+            <input type="date" id="reminderDate">
+            <input type="time" id="reminderTime" style="margin-top: 6px;">
         </div>
         <div class="form-group">
-            <label>रिमाइंडर सन्देश:</label>
-
-            <input type="text" id="reminderText" placeholder="जैसे: डॉक्टर की दवाई लेनी है / मीटिंग है">
+            <label>रिमाइंडर सन्देश (या बोलकर रिकॉर्ड करें):</label>
+            <input type="text" id="reminderText" placeholder="जैसे: दीदी को कॉल करना है / बर्थडे विश करना है">
         </div>
-        <button class="save-btn" onclick="addReminder()">+ नया रिमाइंडर जोड़ें</button>
+        <button class="save-btn" onclick="saveReminder()">रिमाइंडर सेट करें</button>
 
+        <!-- मल्टीपल रिमाइंडर्स की सूची -->
         <div style="margin-top: 16px;">
-            <label>आपके सेट किए गए रिमाइंडर्स:</label>
-
+            <label>आपके सेट किए गए सभी रिमाइंडर्स:</label>
             <div id="reminderList">
                 <p style="font-size: 12px; color: #64748b;">कोई भी रिमाइंडर सेट नहीं है।</p>
             </div>
@@ -195,19 +203,17 @@
         <h2>4. रात्रि संवाद एवं शयन (Night Reflection)</h2>
         <div class="form-group">
             <label>सोने का समय (Bedtime):</label>
-
             <input type="time" id="nightTime" value="22:00">
         </div>
         <div class="form-group">
-            <label>सोते समय पसंदीदा संगीत/भजन लिंक:</label>
-
-            <input type="text" id="sleepAudioLink" placeholder="यूट्यूब या ऑडियो लिंक पेस्ट करें">
+            <label>सोते समय पसंदीदा भजन/संगीत का लिंक:</label>
+            <input type="text" id="sleepAudioLink" placeholder="यूट्यूब लिंक या ऑडियो फाइल का पाथ लिखें">
         </div>
         <button class="save-btn" onclick="saveNightSettings()">रात्रि सेटिंग्स सेव करें</button>
     </div>
 
     <script>
-        // PWA Install Prompt
+        // 1. PWA Install Prompt Logic
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -227,7 +233,7 @@
             }
         }
 
-        // Voice Recording Engine
+        // 2. लाइव रिकॉर्डिंग लॉजिक
         let mediaRecorder;
         let audioChunks = [];
         let recordedAudioBase64 = "";
@@ -256,21 +262,49 @@
 
                 mediaRecorder.start();
                 document.getElementById('startRec').style.display = 'none';
-                document.getElementById('stopRec').style.display = 'inline-block';
+                document.getElementById('stopRec').style.display = 'block';
             } catch (err) {
-                alert("माइक्रोफ़ोन की अनुमति नहीं मिली: " + err.message);
+                alert("माइक्रोफ़ोन एक्सेस करने की अनुमति नहीं मिली: " + err.message);
             }
         }
 
         function stopRecording() {
             if (mediaRecorder) {
                 mediaRecorder.stop();
-                document.getElementById('startRec').style.display = 'inline-block';
+                document.getElementById('startRec').style.display = 'block';
                 document.getElementById('stopRec').style.display = 'none';
             }
         }
 
-        // Load Saved Data on Startup
+        function loadAudioFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    recordedAudioBase64 = reader.result;
+                    const audioPreview = document.getElementById('audioPreview');
+                    audioPreview.src = recordedAudioBase64;
+                    audioPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function previewDeityImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const img = document.getElementById('deityPreview');
+                    img.src = reader.result;
+                    img.style.display = 'block';
+                    localStorage.setItem('deityImage', reader.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 3. पेज लोड होते ही पुराना सेव डेटा वापस दिखाएँ (Auto-Load on Refresh)
         window.addEventListener('DOMContentLoaded', () => {
             if(localStorage.getItem('morningTime')) {
                 document.getElementById('morningTime').value = localStorage.getItem('morningTime');
@@ -283,6 +317,11 @@
             }
             if(localStorage.getItem('eveningTime')) {
                 document.getElementById('eveningTime').value = localStorage.getItem('eveningTime');
+            }
+            if(localStorage.getItem('deityImage')) {
+                const img = document.getElementById('deityPreview');
+                img.src = localStorage.getItem('deityImage');
+                img.style.display = 'block';
             }
             if(localStorage.getItem('aartiLink')) {
                 document.getElementById('aartiLink').value = localStorage.getItem('aartiLink');
@@ -297,30 +336,25 @@
             loadReminders();
         });
 
-        // Save Functions
+        // 4. डेटा सेव करने के फंक्शन्स
         function saveMorningSettings() {
             const time = document.getElementById('morningTime').value;
             localStorage.setItem('morningTime', time);
             if(recordedAudioBase64) {
                 localStorage.setItem('morningAudio', recordedAudioBase64);
             }
-            alert("प्रभात अलार्म और वॉयस रिकॉर्डिंग सेव हो गई!");
+            alert("प्रभात अलार्म समय (" + time + ") और वॉयस सेव हो गया है!");
         }
 
         function saveEveningSettings() {
-            localStorage.setItem('eveningTime', document.getElementById('eveningTime').value);
-            localStorage.setItem('aartiLink', document.getElementById('aartiLink').value);
-            alert("संध्या आरती सेटिंग्स सेव हो गईं!");
+            const time = document.getElementById('eveningTime').value;
+            const link = document.getElementById('aartiLink').value;
+            localStorage.setItem('eveningTime', time);
+            localStorage.setItem('aartiLink', link);
+            alert("संध्या आरती समय (" + time + ") सेव हो गया है!");
         }
 
-        function saveNightSettings() {
-            localStorage.setItem('nightTime', document.getElementById('nightTime').value);
-            localStorage.setItem('sleepAudioLink', document.getElementById('sleepAudioLink').value);
-            alert("रात्रि सेटिंग्स सेव हो गईं!");
-        }
-
-        // Multiple Reminders Logic
-        function addReminder() {
+        function saveReminder() {
             const date = document.getElementById('reminderDate').value;
             const time = document.getElementById('reminderTime').value;
             const text = document.getElementById('reminderText').value;
@@ -336,7 +370,7 @@
 
             document.getElementById('reminderText').value = '';
             loadReminders();
-            alert("रिमाइंडर सूची में जोड़ दिया गया!");
+            alert("रिमाइंडर सफलतापूर्वक सेव हो गया है!");
         }
 
         function loadReminders() {
@@ -367,6 +401,14 @@
             reminders = reminders.filter(item => item.id !== id);
             localStorage.setItem('remindersList', JSON.stringify(reminders));
             loadReminders();
+        }
+
+        function saveNightSettings() {
+            const time = document.getElementById('nightTime').value;
+            const link = document.getElementById('sleepAudioLink').value;
+            localStorage.setItem('nightTime', time);
+            localStorage.setItem('sleepAudioLink', link);
+            alert("रात्रि संवाद समय (" + time + ") सेव हो गया है!");
         }
     </script>
 </body>
