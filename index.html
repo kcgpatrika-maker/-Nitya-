@@ -270,16 +270,54 @@
             }
         }
 
+        // IndexedDB Storage for Image (Prevent deletion on refresh)
         function saveDeityImage(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    localStorage.setItem('deityImage', reader.result);
-                    document.getElementById('imgStatus').style.display = 'block';
+                    const imageData = reader.result;
+                    let request = indexedDB.open("NityaDB", 1);
+                    request.onupgradeneeded = (e) => {
+                        let db = e.target.result;
+                        if(!db.objectStoreNames.contains("images")) {
+                            db.createObjectStore("images");
+                        }
+                    };
+                    request.onsuccess = (e) => {
+                        let db = e.target.result;
+                        let tx = db.transaction("images", "readwrite");
+                        let store = tx.objectStore("images");
+                        store.put(imageData, "deityImage");
+                        tx.oncomplete = () => {
+                            document.getElementById('imgStatus').style.display = 'block';
+                            alert("भगवान की फोटो सुरक्षित सेव हो गई है!");
+                        };
+                    };
                 };
                 reader.readAsDataURL(file);
             }
+        }
+
+        function loadDeityImage() {
+            let request = indexedDB.open("NityaDB", 1);
+            request.onupgradeneeded = (e) => {
+                let db = e.target.result;
+                if(!db.objectStoreNames.contains("images")) {
+                    db.createObjectStore("images");
+                }
+            };
+            request.onsuccess = (e) => {
+                let db = e.target.result;
+                let tx = db.transaction("images", "readonly");
+                let store = tx.objectStore("images");
+                let getImage = store.get("deityImage");
+                getImage.onsuccess = () => {
+                    if (getImage.result) {
+                        document.getElementById('imgStatus').style.display = 'block';
+                    }
+                };
+            };
         }
 
         // Auto Load Saved Data
@@ -296,9 +334,6 @@
             if(localStorage.getItem('eveningTime')) {
                 document.getElementById('eveningTime').value = localStorage.getItem('eveningTime');
             }
-            if(localStorage.getItem('deityImage')) {
-                document.getElementById('imgStatus').style.display = 'block';
-            }
             if(localStorage.getItem('aartiLink')) {
                 document.getElementById('aartiLink').value = localStorage.getItem('aartiLink');
             }
@@ -309,8 +344,9 @@
                 document.getElementById('sleepAudioLink').value = localStorage.getItem('sleepAudioLink');
             }
 
+            loadDeityImage();
             loadReminders();
-            startAlarmEngine(); // अलार्म टाइमर इंजन चालू करें
+            startAlarmEngine();
         });
 
         function saveMorningSettings() {
@@ -382,7 +418,7 @@
             loadReminders();
         }
 
-        // ALARM ENGINE (हर 10 सेकंड में समय मैच करता है)
+        // ALARM ENGINE
         function startAlarmEngine() {
             setInterval(() => {
                 const now = new Date();
