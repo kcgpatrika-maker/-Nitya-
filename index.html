@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nitya - आपकी दिनचर्या का साथी</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
     <style>
         :root {
             --bg-color: #0f172a;
@@ -36,6 +38,25 @@
             font-size: 20px;
             font-weight: 600;
         }
+        .pwa-banner {
+            background: #0284c7;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .pwa-btn {
+            background: #ffffff;
+            color: #0284c7;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 8px;
+            cursor: pointer;
+        }
         .card {
             background: var(--card-bg);
             border-radius: 12px;
@@ -55,7 +76,7 @@
             color: white;
             box-sizing: border-box;
         }
-        button {
+        button.save-btn {
             background: var(--accent);
             color: #000;
             border: none;
@@ -66,7 +87,6 @@
             width: 100%;
             margin-top: 8px;
         }
-        button:active { opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -74,6 +94,12 @@
     <div class="header">
         <h1>Nitya</h1>
         <div class="tagline">आपकी दिनचर्या का साथी</div>
+    </div>
+
+    <!-- PWA Install Banner -->
+    <div id="pwaBanner" class="pwa-banner">
+        <span>Nitya को अपने फोन में ऐप की तरह जोड़ें!</span><br>
+        <button class="pwa-btn" onclick="installPWA()">होम स्क्रीन पर जोड़ें (Add to Home Screen)</button>
     </div>
 
     <!-- 1. प्रभात अलार्म सेटिंग्स -->
@@ -87,7 +113,7 @@
             <label>परिवार के सदस्य की आवाज रिकॉर्ड करें:</label>
             <input type="file" id="morningAudio" accept="audio/*">
         </div>
-        <button onclick="saveMorningSettings()">मॉर्निंग सेटिंग्स सेव करें</button>
+        <button class="save-btn" onclick="saveMorningSettings()">मॉर्निंग सेटिंग्स सेव करें</button>
     </div>
 
     <!-- 2. संध्या आरती सेटिंग्स -->
@@ -105,10 +131,10 @@
             <label>आरती/मंत्र का यूट्यूब लिंक या लोकल ऑडियो:</label>
             <input type="text" id="aartiLink" placeholder="यूट्यूब लिंक या ऑडियो फाइल का पाथ लिखें">
         </div>
-        <button onclick="saveEveningSettings()">संध्या सेटिंग्स सेव करें</button>
+        <button class="save-btn" onclick="saveEveningSettings()">संध्या सेटिंग्स सेव करें</button>
     </div>
 
-    <!-- 3. महत्वपूर्ण रिमाइंडर (कैलेंडर एवं वॉयस) -->
+    <!-- 3. महत्वपूर्ण रिमाइंडर -->
     <div class="card">
         <h2>3. महत्वपूर्ण रिमाइंडर (Reminder)</h2>
         <div class="form-group">
@@ -120,7 +146,7 @@
             <label>रिमाइंडर सन्देश (या बोलकर रिकॉर्ड करें):</label>
             <input type="text" id="reminderText" placeholder="जैसे: दीदी को कॉल करना है / बर्थडे विश करना है">
         </div>
-        <button onclick="saveReminder()">रिमाइंडर सेट करें</button>
+        <button class="save-btn" onclick="saveReminder()">रिमाइंडर सेट करें</button>
     </div>
 
     <!-- 4. रात्रि शयन संवाद सेटिंग्स -->
@@ -134,10 +160,30 @@
             <label>सोते समय पसंदीदा भजन/संगीत का लिंक:</label>
             <input type="text" id="sleepAudioLink" placeholder="यूट्यूब लिंक या ऑडियो फाइल का पाथ लिखें">
         </div>
-        <button onclick="saveNightSettings()">रात्रि सेटिंग्स सेव करें</button>
+        <button class="save-btn" onclick="saveNightSettings()">रात्रि सेटिंग्स सेव करें</button>
     </div>
 
     <script>
+        // PWA Install Prompt Logic
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwaBanner').style.display = 'block';
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('pwaBanner').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
         function saveMorningSettings() {
             localStorage.setItem('morningTime', document.getElementById('morningTime').value);
             alert("मॉर्निंग अलार्म सेटिंग्स सेव हो गईं!");
