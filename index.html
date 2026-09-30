@@ -122,6 +122,35 @@
             border-radius: 4px;
         }
         audio { width: 100%; margin-top: 8px; }
+
+        /* भगवान की फोटो का प्रिव्यू और फुल-स्क्रीन आरती मॉडल */
+        .deity-preview-box {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-top: 8px;
+            border: 1px solid #334155;
+            display: none;
+        }
+
+        #aartiOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            z-index: 9999;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #aartiOverlay img {
+            max-width: 90%;
+            max-height: 60vh;
+            border-radius: 12px;
+            box-shadow: 0 0 20px #f59e0b;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -161,9 +190,10 @@
             <input type="time" id="eveningTime" value="18:30">
         </div>
         <div class="form-group">
-            <label>भगवान की फोटो अपलोड करें (समय होने पर ही दिखेगी):</label>
+            <label>भगवान की फोटो अपलोड करें:</label>
             <input type="file" id="deityImage" accept="image/*" onchange="saveDeityImage(event)">
             <p id="imgStatus" style="font-size: 12px; color: #22c55e; display: none;">✓ फोटो सुरक्षित सेव हो गई है</p>
+            <img id="savedDeityPreview" class="deity-preview-box" alt="भगवान की फोटो प्रिव्यू">
         </div>
         <div class="form-group">
             <label>आरती/मंत्र का यूट्यूब लिंक या लोकल ऑडियो:</label>
@@ -208,8 +238,16 @@
         <button class="save-btn" onclick="saveNightSettings()">रात्रि सेटिंग्स सेव करें</button>
     </div>
 
+    <!-- संध्या आरती स्क्रीन मॉडल (समय होने पर सामने आएगा) -->
+    <div id="aartiOverlay">
+        <h1 style="color: #f59e0b; margin-top: 10px;">॥ जय श्री कृष्णा / संध्या आरती ॥</h1>
+        <img id="aartiFullImage" src="" alt="दिव्य दर्शन">
+        <div style="margin-top: 20px;">
+            <button class="save-btn" style="width: auto; padding: 10px 30px;" onclick="closeAartiMode()">आरती संपन्न (बंद करें)</button>
+        </div>
+    </div>
+
     <script>
-        // PWA Banner
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -270,7 +308,7 @@
             }
         }
 
-        // IndexedDB Storage for Image (Prevent deletion on refresh)
+        // IndexedDB Storage - Photo Permanency Logic
         function saveDeityImage(event) {
             const file = event.target.files[0];
             if (file) {
@@ -290,7 +328,7 @@
                         let store = tx.objectStore("images");
                         store.put(imageData, "deityImage");
                         tx.oncomplete = () => {
-                            document.getElementById('imgStatus').style.display = 'block';
+                            showPhotoPreview(imageData);
                             alert("भगवान की फोटो सुरक्षित सेव हो गई है!");
                         };
                     };
@@ -314,10 +352,18 @@
                 let getImage = store.get("deityImage");
                 getImage.onsuccess = () => {
                     if (getImage.result) {
-                        document.getElementById('imgStatus').style.display = 'block';
+                        showPhotoPreview(getImage.result);
                     }
                 };
             };
+        }
+
+        function showPhotoPreview(imgSrc) {
+            document.getElementById('imgStatus').style.display = 'block';
+            const imgElem = document.getElementById('savedDeityPreview');
+            imgElem.src = imgSrc;
+            imgElem.style.display = 'block';
+            document.getElementById('aartiFullImage').src = imgSrc;
         }
 
         // Auto Load Saved Data
@@ -418,13 +464,16 @@
             loadReminders();
         }
 
-        // ALARM ENGINE
+        // ALARM ENGINE & AARTI AUTOMATION
+        let aartiTriggeredToday = false;
+
         function startAlarmEngine() {
             setInterval(() => {
                 const now = new Date();
                 const currentDate = now.toISOString().split('T')[0];
                 const currentTime = now.toTimeString().substring(0, 5);
 
+                // 1. रिमाइंडर्स चेक
                 let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
                 reminders.forEach(item => {
                     if (item.date === currentDate && item.time === currentTime && !item.triggered) {
@@ -434,7 +483,27 @@
                         alert("⏰ Nitya Reminder:\n\n" + item.text);
                     }
                 });
+
+                // 2. संध्या आरती ऑटो-ट्रिगर चेक
+                const savedEveningTime = localStorage.getItem('eveningTime');
+                if (savedEveningTime === currentTime && !aartiTriggeredToday) {
+                    aartiTriggeredToday = true;
+                    openAartiMode();
+                }
             }, 10000);
+        }
+
+        function openAartiMode() {
+            playAlarmSound();
+            document.getElementById('aartiOverlay').style.display = 'block';
+            const aartiLink = localStorage.getItem('aartiLink');
+            if(aartiLink && aartiLink.includes('http')) {
+                window.open(aartiLink, '_blank');
+            }
+        }
+
+        function closeAartiMode() {
+            document.getElementById('aartiOverlay').style.display = 'none';
         }
 
         function playAlarmSound() {
