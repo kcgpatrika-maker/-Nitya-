@@ -162,9 +162,8 @@
         </div>
         <button class="save-btn" onclick="saveNightSettings()">रात्रि सेटिंग्स सेव करें</button>
     </div>
-
     <script>
-        // PWA Install Prompt Logic
+        // 1. PWA Install Prompt Logic
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -184,33 +183,73 @@
             }
         }
 
+        // 2. पेज लोड होते ही पुराना सेव डेटा वापस दिखाएँ (Auto-Load on Refresh)
+        window.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('morningTime')) {
+                document.getElementById('morningTime').value = localStorage.getItem('morningTime');
+            }
+            if(localStorage.getItem('eveningTime')) {
+                document.getElementById('eveningTime').value = localStorage.getItem('eveningTime');
+            }
+            if(localStorage.getItem('aartiLink')) {
+                document.getElementById('aartiLink').value = localStorage.getItem('aartiLink');
+            }
+            if(localStorage.getItem('reminderDate')) {
+                document.getElementById('reminderDate').value = localStorage.getItem('reminderDate');
+            }
+            if(localStorage.getItem('reminderTime')) {
+                document.getElementById('reminderTime').value = localStorage.getItem('reminderTime');
+            }
+            if(localStorage.getItem('reminderText')) {
+                document.getElementById('reminderText').value = localStorage.getItem('reminderText');
+            }
+            if(localStorage.getItem('nightTime')) {
+                document.getElementById('nightTime').value = localStorage.getItem('nightTime');
+            }
+            if(localStorage.getItem('sleepAudioLink')) {
+                document.getElementById('sleepAudioLink').value = localStorage.getItem('sleepAudioLink');
+            }
+        });
+
+        // 3. डेटा सेव करने के फंक्शन्स
         function saveMorningSettings() {
-            localStorage.setItem('morningTime', document.getElementById('morningTime').value);
-            alert("मॉर्निंग अलार्म सेटिंग्स सेव हो गईं!");
+            const time = document.getElementById('morningTime').value;
+            localStorage.setItem('morningTime', time);
+            alert("प्रभात अलार्म समय (" + time + ") सेव हो गया है!");
         }
 
         function saveEveningSettings() {
-            localStorage.setItem('eveningTime', document.getElementById('eveningTime').value);
-            localStorage.setItem('aartiLink', document.getElementById('aartiLink').value);
-            alert("संध्या आरती सेटिंग्स सेव हो गईं!");
+            const time = document.getElementById('eveningTime').value;
+            const link = document.getElementById('aartiLink').value;
+            localStorage.setItem('eveningTime', time);
+            localStorage.setItem('aartiLink', link);
+            alert("संध्या आरती समय (" + time + ") सेव हो गया है!");
         }
 
         function saveReminder() {
             const date = document.getElementById('reminderDate').value;
             const time = document.getElementById('reminderTime').value;
             const text = document.getElementById('reminderText').value;
+
             if(!date || !time || !text) {
-                alert("कृपया तारीख, समय और रिमाइंडर सन्देश पूरा भरें।");
+                alert("कृपया तारीख, समय और संदेश पूरा भरें।");
                 return;
             }
-            alert("रिमाइंडर सफलतापूर्वक सेट हो गया है!");
+
+            localStorage.setItem('reminderDate', date);
+            localStorage.setItem('reminderTime', time);
+            localStorage.setItem('reminderText', text);
+            alert("रिमाइंडर सफलतापूर्वक सेव हो गया है!");
         }
 
         function saveNightSettings() {
-            localStorage.setItem('nightTime', document.getElementById('nightTime').value);
-            localStorage.setItem('sleepAudioLink', document.getElementById('sleepAudioLink').value);
-            alert("रात्रि संवाद सेटिंग्स सेव हो गईं!");
+            const time = document.getElementById('nightTime').value;
+            const link = document.getElementById('sleepAudioLink').value;
+            localStorage.setItem('nightTime', time);
+            localStorage.setItem('sleepAudioLink', link);
+            alert("रात्रि संवाद समय (" + time + ") सेव हो गया है!");
         }
     </script>
+
 </body>
 </html>
