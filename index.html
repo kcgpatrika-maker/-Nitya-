@@ -372,11 +372,10 @@
         document.getElementById('aartiFullImage').src = imgSrc; // आरती overlay के लिए तैयार रखें
     }
 
-        // Auto Load Saved Data & Notifications Permission Request
-    
+     <!-- 🔹 PART 4: Script - Aarti, Night Dialogue & Alarm Engine -->
     let audioCtx = null;
 
-    // ऑडियो अनलॉक करने के लिए यूज़र टच
+    // ऑडियो अनलॉक करने के लिए स्क्रीन टच/क्लिक इवेंट
     document.addEventListener('click', initAudioContext, { once: true });
     document.addEventListener('touchstart', initAudioContext, { once: true });
 
@@ -391,11 +390,11 @@
         }
     }
 
-    // Service Worker Register करना (बैकग्राउंड अलर्ट के लिए अनिवार्य)
+    // Service Worker Register
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('Service Worker Registered!', reg))
-            .catch(err => console.log('Service Worker Error:', err));
+            .then(reg => console.log('Service Worker Active'))
+            .catch(err => console.log('SW Error:', err));
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -403,54 +402,80 @@
             Notification.requestPermission();
         }
 
+        // आरती और रात्रि टाइम सेटिंग्स लोड करें
         if(localStorage.getItem('eveningTime')) {
             document.getElementById('eveningTime').value = localStorage.getItem('eveningTime');
         }
         if(localStorage.getItem('aartiLink')) {
             document.getElementById('aartiLink').value = localStorage.getItem('aartiLink');
         }
+        if(localStorage.getItem('nightTime')) {
+            document.getElementById('nightTime').value = localStorage.getItem('nightTime');
+        } else {
+            document.getElementById('nightTime').value = "22:00"; // डिफ़ॉल्ट रात 10 बजे
+        }
+        if(localStorage.getItem('sleepAudioLink')) {
+            document.getElementById('sleepAudioLink').value = localStorage.getItem('sleepAudioLink');
+        }
 
         loadDeityImage();
-        startAartiTimer();
+        startMasterEngine();
     });
 
-    function saveEveningSettings() {
-        const timeVal = document.getElementById('eveningTime').value;
-        const linkVal = document.getElementById('aartiLink').value;
-        localStorage.setItem('eveningTime', timeVal);
-        localStorage.setItem('aartiLink', linkVal);
-        alert("संध्या आरती सेटिंग्स सेव हो गईं!");
+    function saveNightSettings() {
+        const nightTimeVal = document.getElementById('nightTime').value;
+        const sleepAudioVal = document.getElementById('sleepAudioLink').value;
+        
+        localStorage.setItem('nightTime', nightTimeVal);
+        localStorage.setItem('sleepAudioLink', sleepAudioVal);
+        
+        localStorage.removeItem('nightLastTriggeredDate');
+        alert("रात्रि संवाद एवं शयन का समय (" + nightTimeVal + ") सेव हो गया है!");
     }
 
-    // संध्या आरती टाइमर (हर 2 सेकंड में चेक)
-    let aartiTriggeredToday = false;
+    // 🎯 मास्टर अलार्म और टाइमर इंजन (हर 3 सेकंड में चेक)
+    function startMasterEngine() {
+        checkTimers();
+        setInterval(checkTimers, 3000);
+    }
 
-    function startAartiTimer() {
-        setInterval(() => {
-            const now = new Date();
-            const currentTime = now.toTimeString().substring(0, 5);
-            const savedEveningTime = localStorage.getItem('eveningTime');
+    function checkTimers() {
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
 
-            if (savedEveningTime === currentTime && !aartiTriggeredToday) {
-                aartiTriggeredToday = true;
+        // 1. संध्या आरती चेकिंग
+        const savedEveningTime = localStorage.getItem('eveningTime');
+        if (savedEveningTime) {
+            const [eH, eM] = savedEveningTime.split(':').map(Number);
+            const targetE = (eH * 60) + eM;
+            const lastAartiDate = localStorage.getItem('aartiLastTriggeredDate');
+
+            if (lastAartiDate !== todayStr && currentTotalMinutes >= targetE && currentTotalMinutes < (targetE + 5)) {
+                localStorage.setItem('aartiLastTriggeredDate', todayStr);
                 triggerAarti();
             }
-        }, 2000);
+        }
+
+        // 2. रात्रि संवाद चेकिंग
+        const savedNightTime = localStorage.getItem('nightTime');
+        if (savedNightTime) {
+            const [nH, nM] = savedNightTime.split(':').map(Number);
+            const targetN = (nH * 60) + nM;
+            const lastNightDate = localStorage.getItem('nightLastTriggeredDate');
+
+            if (lastNightDate !== todayStr && currentTotalMinutes >= targetN && currentTotalMinutes < (targetN + 5)) {
+                localStorage.setItem('nightLastTriggeredDate', todayStr);
+                startNightReflection();
+            }
+        }
     }
 
+    // 🔔 आरती फंक्शन
     function triggerAarti() {
-        playAartiSound();
+        playToneSound(587.33); // D5 बीप टोन
         document.getElementById('aartiOverlay').style.display = 'block';
-
-        if ("Notification" in window && Notification.permission === "granted") {
-            navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification("॥ संध्या आरती ॥", {
-                    body: "जय श्री कृष्णा! आरती का समय हो गया है।",
-                    icon: "icon.png",
-                    requireInteraction: true
-                });
-            });
-        }
+        sendNotification("॥ संध्या आरती ॥", "जय श्री कृष्णा! आरती का समय हो गया है।");
 
         const aartiLink = localStorage.getItem('aartiLink');
         if(aartiLink && aartiLink.includes('http')) {
@@ -462,7 +487,75 @@
         document.getElementById('aartiOverlay').style.display = 'none';
     }
 
-    function playAartiSound() {
+    // 🌙 रात्रि संवाद और शयन इंजन
+    function startNightReflection() {
+        playToneSound(440); // शांत ए4 टोन
+        sendNotification("🌙 रात्रि संवाद का समय", "दिनभर के कार्यों की समीक्षा और शयन का समय हो गया है।");
+
+        // चरण 1: सवाल 1 और सवाल 2 पूछना
+        setTimeout(() => {
+            const q1 = prompt("🌙 Nitya संवाद (1/2):\n\nआज आपका दिन कैसा रहा?\n1. बहुत अच्छा\n2. सामान्य\n3. थोड़ा तनावपूर्ण\n(कृपया 1, 2 या 3 लिखें):", "2");
+            
+            const q2 = prompt("🌙 Nitya संवाद (2/2):\n\nक्या आज का कोई महत्वपूर्ण कार्य अधूरा रह गया जिसे कल पूरा करना है?", "नहीं, सब हो गया");
+
+            // सिस्टम का जवाब
+            let systemResponse = "";
+            if (q1 === "1") {
+                systemResponse = "यह जानकर बहुत प्रसन्नता हुई कि आपका दिन बेहतरीन रहा! ";
+            } else if (q3 === "3" || q1 === "3") {
+                systemResponse = "आज का दिन थोड़ा कठिन रहा, कोई बात नहीं। हर नया दिन नई ऊर्जा लेकर आता है। ";
+            } else {
+                systemResponse = "दिन की सहजता के लिए धन्यवाद। ";
+            }
+
+            if (q2 && q2.toLowerCase() !== "नहीं" && q2.toLowerCase() !== "no") {
+                systemResponse += "अधूरे कार्य को कल की प्राथमिकता सूची में जोड़ दिया गया है। ";
+            }
+            systemResponse += "अब आप तनावमुक्त होकर विश्राम करें।";
+
+            alert("🤖 Nitya का सन्देश:\n\n" + systemResponse);
+
+            // चरण 2: मुख्य समाचार सुनाना/दिखाना
+            showNightNews();
+        }, 500);
+    }
+
+    function showNightNews() {
+        const newsSummary = "📰 आज का मुख्य समाचार संक्षेप:\n\n• देश एवं प्रदेश में आज का दिन शांतिपूर्ण रहा।\n• मौसम विभाग के अनुसार कल मौसम अनुकूल रहने की संभावना है।\n• आज की सकारात्मक सीख: 'संतोष ही परम सुख है।'";
+        
+        alert(newsSummary);
+
+        // चरण 3: पसंदीदा गाना/भजन प्ले करना
+        playSleepMusic();
+    }
+
+    function playSleepMusic() {
+        const sleepLink = localStorage.getItem('sleepAudioLink');
+        if (sleepLink && sleepLink.includes('http')) {
+            alert("🎶 अब आपके द्वारा चुना गया शयन संगीत/भजन शुरू किया जा रहा है। शुभ रात्रि!");
+            window.open(sleepLink, '_blank');
+        } else {
+            alert("🌙 शुभ रात्रि! मीठे सपनों के साथ विश्राम करें।");
+        }
+    }
+
+    function sendNotification(title, bodyText) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            try {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, {
+                        body: bodyText,
+                        icon: "icon.png",
+                        requireInteraction: true
+                    });
+                });
+            } catch(e) {
+                new Notification(title, { body: bodyText });
+            }
+        }
+    }
+
+    function playToneSound(freq) {
         try {
             if (!audioCtx) initAudioContext();
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -470,14 +563,14 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 टोन (शंख/घंटी जैसी)
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
 
             osc.start();
-            osc.stop(audioCtx.currentTime + 4);
+            osc.stop(audioCtx.currentTime + 3);
         } catch(e) {
             console.log("Audio error:", e);
         }
