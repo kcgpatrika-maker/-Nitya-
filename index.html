@@ -373,16 +373,16 @@
     }
 
         // Auto Load Saved Data & Notifications Permission Request
+    
     let audioCtx = null;
 
-    // ब्राउज़र की ऑडियो पाबंदी हटाने के लिए स्क्रीन पर कहीं भी टच/क्लिक करने पर ऑडियो अनलॉक
+    // ऑडियो अनलॉक करने के लिए यूज़र टच
     document.addEventListener('click', initAudioContext, { once: true });
     document.addEventListener('touchstart', initAudioContext, { once: true });
 
     function initAudioContext() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            // साइलेंट बफ़र प्ले करके ऑडियो चैनल एक्टिव करना
             let buffer = audioCtx.createBuffer(1, 1, 22050);
             let source = audioCtx.createBufferSource();
             source.buffer = buffer;
@@ -391,179 +391,67 @@
         }
     }
 
+    // Service Worker Register करना (बैकग्राउंड अलर्ट के लिए अनिवार्य)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker Registered!', reg))
+            .catch(err => console.log('Service Worker Error:', err));
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         if ("Notification" in window && Notification.permission !== "granted") {
             Notification.requestPermission();
         }
 
-        if(localStorage.getItem('morningTime')) {
-            document.getElementById('morningTime').value = localStorage.getItem('morningTime');
-        }
-        if(localStorage.getItem('morningAudio')) {
-            recordedAudioBase64 = localStorage.getItem('morningAudio');
-            const audioPreview = document.getElementById('audioPreview');
-            audioPreview.src = recordedAudioBase64;
-            audioPreview.style.display = 'block';
-        }
         if(localStorage.getItem('eveningTime')) {
             document.getElementById('eveningTime').value = localStorage.getItem('eveningTime');
         }
         if(localStorage.getItem('aartiLink')) {
             document.getElementById('aartiLink').value = localStorage.getItem('aartiLink');
         }
-        if(localStorage.getItem('nightTime')) {
-            document.getElementById('nightTime').value = localStorage.getItem('nightTime');
-        }
-        if(localStorage.getItem('sleepAudioLink')) {
-            document.getElementById('sleepAudioLink').value = localStorage.getItem('sleepAudioLink');
-        }
 
         loadDeityImage();
-        loadReminders();
-        startAlarmEngine();
+        startAartiTimer();
     });
 
-    function saveMorningSettings() {
-        localStorage.setItem('morningTime', document.getElementById('morningTime').value);
-        if(recordedAudioBase64) {
-            localStorage.setItem('morningAudio', recordedAudioBase64);
-        }
-        alert("प्रभात अलार्म और वॉयस सेव हो गई!");
-    }
-
     function saveEveningSettings() {
-        localStorage.setItem('eveningTime', document.getElementById('eveningTime').value);
-        localStorage.setItem('aartiLink', document.getElementById('aartiLink').value);
+        const timeVal = document.getElementById('eveningTime').value;
+        const linkVal = document.getElementById('aartiLink').value;
+        localStorage.setItem('eveningTime', timeVal);
+        localStorage.setItem('aartiLink', linkVal);
         alert("संध्या आरती सेटिंग्स सेव हो गईं!");
     }
 
-    function saveNightSettings() {
-        localStorage.setItem('nightTime', document.getElementById('nightTime').value);
-        localStorage.setItem('sleepAudioLink', document.getElementById('sleepAudioLink').value);
-        alert("रात्रि सेटिंग्स सेव हो गईं!");
-    }
-
-    function saveReminder() {
-        const date = document.getElementById('reminderDate').value;
-        const time = document.getElementById('reminderTime').value;
-        const text = document.getElementById('reminderText').value;
-
-        if(!date || !time || !text) {
-            alert("कृपया तारीख, समय और सन्देश पूरा भरें।");
-            return;
-        }
-
-        let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
-        reminders.push({ id: Date.now(), date, time, text, triggered: false });
-        localStorage.setItem('remindersList', JSON.stringify(reminders));
-
-        document.getElementById('reminderText').value = '';
-        loadReminders();
-        alert("रिमाइंडर सेट हो गया है!");
-    }
-
-    function loadReminders() {
-        let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
-        const listDiv = document.getElementById('reminderList');
-
-        if(reminders.length === 0) {
-            listDiv.innerHTML = '<p style="font-size: 12px; color: #64748b;">कोई भी रिमाइंडर सेट नहीं है।</p>';
-            return;
-        }
-
-        listDiv.innerHTML = '';
-        reminders.forEach(item => {
-            listDiv.innerHTML += `
-                <div class="reminder-item">
-                    <div>
-                        <strong style="color: #38bdf8;">${item.text}</strong><br>
-                        <span style="font-size: 12px; color: #94a3b8;">📅 ${item.date} | ⏰ ${item.time}</span>
-                    </div>
-                    <button class="delete-btn" onclick="deleteReminder(${item.id})">हटाएँ</button>
-                </div>
-            `;
-        });
-    }
-
-    function deleteReminder(id) {
-        let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
-        reminders = reminders.filter(item => item.id !== id);
-        localStorage.setItem('remindersList', JSON.stringify(reminders));
-        loadReminders();
-    }
-
-    // RELIABLE ALARM ENGINE
+    // संध्या आरती टाइमर (हर 2 सेकंड में चेक)
     let aartiTriggeredToday = false;
-    let morningTriggeredToday = false;
 
-    function startAlarmEngine() {
-        // हर 3 सेकंड में टाइम चेक ताकि बैकग्राउंड डिले न हो
+    function startAartiTimer() {
         setInterval(() => {
             const now = new Date();
-            const currentDate = now.toISOString().split('T')[0];
             const currentTime = now.toTimeString().substring(0, 5);
-
-            // 1. रिमाइंडर्स
-            let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
-            reminders.forEach(item => {
-                if (item.date === currentDate && item.time === currentTime && !item.triggered) {
-                    item.triggered = true;
-                    localStorage.setItem('remindersList', JSON.stringify(reminders));
-                    triggerAlarmAlert("⏰ Nitya Reminder", item.text);
-                }
-            });
-
-            // 2. प्रभात अलार्म
-            const savedMorningTime = localStorage.getItem('morningTime');
-            if (savedMorningTime === currentTime && !morningTriggeredToday) {
-                morningTriggeredToday = true;
-                const recVoice = localStorage.getItem('morningAudio');
-                if (recVoice) {
-                    playVoiceRecording(recVoice);
-                } else {
-                    playAlarmSound();
-                }
-                sendSystemNotification("🌅 शुभ प्रभात!", "उठने का समय हो गया है।");
-            }
-
-            // 3. संध्या आरती
             const savedEveningTime = localStorage.getItem('eveningTime');
+
             if (savedEveningTime === currentTime && !aartiTriggeredToday) {
                 aartiTriggeredToday = true;
-                openAartiMode();
+                triggerAarti();
             }
-        }, 3000);
+        }, 2000);
     }
 
-    function triggerAlarmAlert(title, message) {
-        playAlarmSound();
-        sendSystemNotification(title, message);
-        setTimeout(() => {
-            alert(title + "\n\n" + message);
-        }, 300);
-    }
-
-    function sendSystemNotification(title, bodyText) {
-        if ("Notification" in window && Notification.permission === "granted") {
-            try {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification(title, {
-                        body: bodyText,
-                        icon: 'icon.png',
-                        vibrate: [200, 100, 200, 100, 200],
-                        requireInteraction: true
-                    });
-                });
-            } catch(e) {
-                new Notification(title, { body: bodyText });
-            }
-        }
-    }
-
-    function openAartiMode() {
-        playAlarmSound();
-        sendSystemNotification("॥ संध्या आरती ॥", "जय श्री कृष्णा! आरती का समय हो गया है।");
+    function triggerAarti() {
+        playAartiSound();
         document.getElementById('aartiOverlay').style.display = 'block';
+
+        if ("Notification" in window && Notification.permission === "granted") {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification("॥ संध्या आरती ॥", {
+                    body: "जय श्री कृष्णा! आरती का समय हो गया है।",
+                    icon: "icon.png",
+                    requireInteraction: true
+                });
+            });
+        }
+
         const aartiLink = localStorage.getItem('aartiLink');
         if(aartiLink && aartiLink.includes('http')) {
             window.open(aartiLink, '_blank');
@@ -574,30 +462,24 @@
         document.getElementById('aartiOverlay').style.display = 'none';
     }
 
-    function playVoiceRecording(base64Audio) {
-        let audio = new Audio(base64Audio);
-        audio.play().catch(e => console.log("Voice Play Error: ", e));
-    }
-
-    function playAlarmSound() {
+    function playAartiSound() {
         try {
             if (!audioCtx) initAudioContext();
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 टोन (शंख/घंटी जैसी)
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
 
             osc.start();
-            osc.stop(audioCtx.currentTime + 3); // 3 सेकंड की स्पष्ट अलार्म टोन
+            osc.stop(audioCtx.currentTime + 4);
         } catch(e) {
-            console.log("Audio Error:", e);
+            console.log("Audio error:", e);
         }
     }
 </script>
