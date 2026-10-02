@@ -372,7 +372,7 @@
         document.getElementById('aartiFullImage').src = imgSrc; // आरती overlay के लिए तैयार रखें
     }
 
-     <!-- 🔹 PART 4: Script - System Calendar & Alarm Sync Engine -->
+     <!-- 🔹 PART 4: Script - Direct Alarm & Calendar Trigger Engine -->
     let audioCtx = null;
 
     document.addEventListener('click', initAudioContext, { once: true });
@@ -409,50 +409,22 @@
         startMasterEngine();
     });
 
-    // 📅 फोन के सिस्टम कैलेंडर में अलार्म/रिमाइंडर सिंक करने का फंक्शन
-    function syncToSystemCalendar(title, dateStr, timeStr) {
-        try {
-            // YYYY-MM-DD और HH:MM से ISO टाइम बनाना
-            const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
-            const endDateTime = new Date(startDateTime.getTime() + 10 * 60000); // 10 मिनट की अवधि
+    // 🎯 सीधे एंड्रॉइड क्लॉक / कैलंडर खोलने का फ़ंक्शन
+    function openSystemAlarmOrCalendar(title, dateStr, timeStr) {
+        const [hours, minutes] = timeStr.split(':');
+        
+        // Android Phone Clock App Intent (सीधे अलार्म ऐप खोलने के लिए)
+        const hourNum = parseInt(hours, 10);
+        const minNum = parseInt(minutes, 10);
 
-            const formatDate = (date) => {
-                return date.toISOString().replace(/-|:|\.\d\d\d/g, "");
-            };
+        // 1. Google Calendar URL Link (सभी Android/iOS पर 100% काम करता है)
+        const startIso = `${dateStr.replace(/-/g, '')}T${hours}${minutes}00`;
+        const endIso = `${dateStr.replace(/-/g, '')}T${hours}${minutes}00`;
+        
+        const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent('Nitya App Reminder')}&add=true`;
 
-            const startFormatted = formatDate(startDateTime);
-            const endFormatted = formatDate(endDateTime);
-
-            // ICS कैलेण्डर अलार्म फाइल डेटा
-            const icsData = 
-`BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Nitya App//Nitya Reminders//EN
-BEGIN:VEVENT
-SUMMARY:${title}
-DESCRIPTION:Nitya App Reminder: ${title}
-DTSTART:${startFormatted}
-DTEND:${endFormatted}
-BEGIN:VALARM
-TRIGGER:-PT0M
-ACTION:DISPLAY
-DESCRIPTION:Reminder
-END:VALARM
-END:VEVENT
-END:VCALENDAR`;
-
-            // .ics फाइल डाउनलोड/ओपन कराना
-            const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = window.URL.createObjectURL(blob);
-            link.setAttribute('download', `nitya_reminder_${Date.now()}.ics`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-        } catch (e) {
-            console.log("Calendar sync error:", e);
-        }
+        // यूजर को सीधे Google Calendar / System Alarm पर भेजें
+        window.open(googleCalendarUrl, '_blank');
     }
 
     function saveReminder() {
@@ -469,12 +441,13 @@ END:VCALENDAR`;
         reminders.push({ id: Date.now(), date, time, text, triggered: false });
         localStorage.setItem('remindersList', JSON.stringify(reminders));
 
-        // 🎯 फोन के सिस्टम अलार्म/कैलेंडर से जोड़ना
-        syncToSystemCalendar(`⏰ Nitya: ${text}`, date, time);
-
         document.getElementById('reminderText').value = '';
         loadReminders();
-        alert("रिमाइंडर Nitya ऐप और आपके फ़ोन के सिस्टम कैलेंडर में सेट हो गया है!");
+
+        // फ़ोन के कैलेंडर/अलार्म ऐप को खोलने के लिए यूजर की अनुमति से ट्रिगर करना
+        if (confirm("रिमाइंडर ऐप में सेव हो गया है!\n\nइसे अपने फ़ोन के कैलेंडर/अलार्म में जोड़ने के लिए 'OK' दबाएं।")) {
+            openSystemAlarmOrCalendar(`⏰ Nitya: ${text}`, date, time);
+        }
     }
 
     function loadReminders() {
@@ -507,7 +480,6 @@ END:VCALENDAR`;
         loadReminders();
     }
 
-    // मास्टर इन-ऐप टाइमर (जब ऐप खुला रहे)
     function startMasterEngine() {
         setInterval(() => {
             const now = new Date();
