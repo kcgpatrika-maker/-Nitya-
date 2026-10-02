@@ -372,10 +372,9 @@
         document.getElementById('aartiFullImage').src = imgSrc; // आरती overlay के लिए तैयार रखें
     }
 
-     <!-- 🔹 PART 4: Script - Aarti, Night Dialogue & Alarm Engine -->
+     <!-- 🔹 PART 4: Script - System Calendar & Alarm Sync Engine -->
     let audioCtx = null;
 
-    // ऑडियो अनलॉक करने के लिए स्क्रीन टच/क्लिक इवेंट
     document.addEventListener('click', initAudioContext, { once: true });
     document.addEventListener('touchstart', initAudioContext, { once: true });
 
@@ -390,7 +389,6 @@
         }
     }
 
-    // Service Worker Register
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .then(reg => console.log('Service Worker Active'))
@@ -402,178 +400,129 @@
             Notification.requestPermission();
         }
 
-        // आरती और रात्रि टाइम सेटिंग्स लोड करें
-        if(localStorage.getItem('eveningTime')) {
-            document.getElementById('eveningTime').value = localStorage.getItem('eveningTime');
-        }
-        if(localStorage.getItem('aartiLink')) {
-            document.getElementById('aartiLink').value = localStorage.getItem('aartiLink');
-        }
-        if(localStorage.getItem('nightTime')) {
-            document.getElementById('nightTime').value = localStorage.getItem('nightTime');
-        } else {
-            document.getElementById('nightTime').value = "22:00"; // डिफ़ॉल्ट रात 10 बजे
-        }
-        if(localStorage.getItem('sleepAudioLink')) {
-            document.getElementById('sleepAudioLink').value = localStorage.getItem('sleepAudioLink');
-        }
+        if(localStorage.getItem('morningTime')) document.getElementById('morningTime').value = localStorage.getItem('morningTime');
+        if(localStorage.getItem('eveningTime')) document.getElementById('eveningTime').value = localStorage.getItem('eveningTime');
+        if(localStorage.getItem('nightTime')) document.getElementById('nightTime').value = localStorage.getItem('nightTime');
 
         loadDeityImage();
+        loadReminders();
         startMasterEngine();
     });
 
-    function saveNightSettings() {
-        const nightTimeVal = document.getElementById('nightTime').value;
-        const sleepAudioVal = document.getElementById('sleepAudioLink').value;
-        
-        localStorage.setItem('nightTime', nightTimeVal);
-        localStorage.setItem('sleepAudioLink', sleepAudioVal);
-        
-        localStorage.removeItem('nightLastTriggeredDate');
-        alert("रात्रि संवाद एवं शयन का समय (" + nightTimeVal + ") सेव हो गया है!");
-    }
-
-    // 🎯 मास्टर अलार्म और टाइमर इंजन (हर 3 सेकंड में चेक)
-    function startMasterEngine() {
-        checkTimers();
-        setInterval(checkTimers, 3000);
-    }
-
-    function checkTimers() {
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
-        const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
-
-        // 1. संध्या आरती चेकिंग
-        const savedEveningTime = localStorage.getItem('eveningTime');
-        if (savedEveningTime) {
-            const [eH, eM] = savedEveningTime.split(':').map(Number);
-            const targetE = (eH * 60) + eM;
-            const lastAartiDate = localStorage.getItem('aartiLastTriggeredDate');
-
-            if (lastAartiDate !== todayStr && currentTotalMinutes >= targetE && currentTotalMinutes < (targetE + 5)) {
-                localStorage.setItem('aartiLastTriggeredDate', todayStr);
-                triggerAarti();
-            }
-        }
-
-        // 2. रात्रि संवाद चेकिंग
-        const savedNightTime = localStorage.getItem('nightTime');
-        if (savedNightTime) {
-            const [nH, nM] = savedNightTime.split(':').map(Number);
-            const targetN = (nH * 60) + nM;
-            const lastNightDate = localStorage.getItem('nightLastTriggeredDate');
-
-            if (lastNightDate !== todayStr && currentTotalMinutes >= targetN && currentTotalMinutes < (targetN + 5)) {
-                localStorage.setItem('nightLastTriggeredDate', todayStr);
-                startNightReflection();
-            }
-        }
-    }
-
-    // 🔔 आरती फंक्शन
-    function triggerAarti() {
-        playToneSound(587.33); // D5 बीप टोन
-        document.getElementById('aartiOverlay').style.display = 'block';
-        sendNotification("॥ संध्या आरती ॥", "जय श्री कृष्णा! आरती का समय हो गया है।");
-
-        const aartiLink = localStorage.getItem('aartiLink');
-        if(aartiLink && aartiLink.includes('http')) {
-            window.open(aartiLink, '_blank');
-        }
-    }
-
-    function closeAartiMode() {
-        document.getElementById('aartiOverlay').style.display = 'none';
-    }
-
-    // 🌙 रात्रि संवाद और शयन इंजन
-    function startNightReflection() {
-        playToneSound(440); // शांत ए4 टोन
-        sendNotification("🌙 रात्रि संवाद का समय", "दिनभर के कार्यों की समीक्षा और शयन का समय हो गया है।");
-
-        // चरण 1: सवाल 1 और सवाल 2 पूछना
-        setTimeout(() => {
-            const q1 = prompt("🌙 Nitya संवाद (1/2):\n\nआज आपका दिन कैसा रहा?\n1. बहुत अच्छा\n2. सामान्य\n3. थोड़ा तनावपूर्ण\n(कृपया 1, 2 या 3 लिखें):", "2");
-            
-            const q2 = prompt("🌙 Nitya संवाद (2/2):\n\nक्या आज का कोई महत्वपूर्ण कार्य अधूरा रह गया जिसे कल पूरा करना है?", "नहीं, सब हो गया");
-
-            // सिस्टम का जवाब
-            let systemResponse = "";
-            if (q1 === "1") {
-                systemResponse = "यह जानकर बहुत प्रसन्नता हुई कि आपका दिन बेहतरीन रहा! ";
-            } else if (q3 === "3" || q1 === "3") {
-                systemResponse = "आज का दिन थोड़ा कठिन रहा, कोई बात नहीं। हर नया दिन नई ऊर्जा लेकर आता है। ";
-            } else {
-                systemResponse = "दिन की सहजता के लिए धन्यवाद। ";
-            }
-
-            if (q2 && q2.toLowerCase() !== "नहीं" && q2.toLowerCase() !== "no") {
-                systemResponse += "अधूरे कार्य को कल की प्राथमिकता सूची में जोड़ दिया गया है। ";
-            }
-            systemResponse += "अब आप तनावमुक्त होकर विश्राम करें।";
-
-            alert("🤖 Nitya का सन्देश:\n\n" + systemResponse);
-
-            // चरण 2: मुख्य समाचार सुनाना/दिखाना
-            showNightNews();
-        }, 500);
-    }
-
-    function showNightNews() {
-        const newsSummary = "📰 आज का मुख्य समाचार संक्षेप:\n\n• देश एवं प्रदेश में आज का दिन शांतिपूर्ण रहा।\n• मौसम विभाग के अनुसार कल मौसम अनुकूल रहने की संभावना है।\n• आज की सकारात्मक सीख: 'संतोष ही परम सुख है।'";
-        
-        alert(newsSummary);
-
-        // चरण 3: पसंदीदा गाना/भजन प्ले करना
-        playSleepMusic();
-    }
-
-    function playSleepMusic() {
-        const sleepLink = localStorage.getItem('sleepAudioLink');
-        if (sleepLink && sleepLink.includes('http')) {
-            alert("🎶 अब आपके द्वारा चुना गया शयन संगीत/भजन शुरू किया जा रहा है। शुभ रात्रि!");
-            window.open(sleepLink, '_blank');
-        } else {
-            alert("🌙 शुभ रात्रि! मीठे सपनों के साथ विश्राम करें।");
-        }
-    }
-
-    function sendNotification(title, bodyText) {
-        if ("Notification" in window && Notification.permission === "granted") {
-            try {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification(title, {
-                        body: bodyText,
-                        icon: "icon.png",
-                        requireInteraction: true
-                    });
-                });
-            } catch(e) {
-                new Notification(title, { body: bodyText });
-            }
-        }
-    }
-
-    function playToneSound(freq) {
+    // 📅 फोन के सिस्टम कैलेंडर में अलार्म/रिमाइंडर सिंक करने का फंक्शन
+    function syncToSystemCalendar(title, dateStr, timeStr) {
         try {
-            if (!audioCtx) initAudioContext();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            // YYYY-MM-DD और HH:MM से ISO टाइम बनाना
+            const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
+            const endDateTime = new Date(startDateTime.getTime() + 10 * 60000); // 10 मिनट की अवधि
 
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            const formatDate = (date) => {
+                return date.toISOString().replace(/-|:|\.\d\d\d/g, "");
+            };
 
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            const startFormatted = formatDate(startDateTime);
+            const endFormatted = formatDate(endDateTime);
 
-            osc.start();
-            osc.stop(audioCtx.currentTime + 3);
-        } catch(e) {
-            console.log("Audio error:", e);
+            // ICS कैलेण्डर अलार्म फाइल डेटा
+            const icsData = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Nitya App//Nitya Reminders//EN
+BEGIN:VEVENT
+SUMMARY:${title}
+DESCRIPTION:Nitya App Reminder: ${title}
+DTSTART:${startFormatted}
+DTEND:${endFormatted}
+BEGIN:VALARM
+TRIGGER:-PT0M
+ACTION:DISPLAY
+DESCRIPTION:Reminder
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+            // .ics फाइल डाउनलोड/ओपन कराना
+            const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute('download', `nitya_reminder_${Date.now()}.ics`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+        } catch (e) {
+            console.log("Calendar sync error:", e);
         }
+    }
+
+    function saveReminder() {
+        const date = document.getElementById('reminderDate').value;
+        const time = document.getElementById('reminderTime').value;
+        const text = document.getElementById('reminderText').value;
+
+        if(!date || !time || !text) {
+            alert("कृपया तारीख, समय और सन्देश पूरा भरें।");
+            return;
+        }
+
+        let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
+        reminders.push({ id: Date.now(), date, time, text, triggered: false });
+        localStorage.setItem('remindersList', JSON.stringify(reminders));
+
+        // 🎯 फोन के सिस्टम अलार्म/कैलेंडर से जोड़ना
+        syncToSystemCalendar(`⏰ Nitya: ${text}`, date, time);
+
+        document.getElementById('reminderText').value = '';
+        loadReminders();
+        alert("रिमाइंडर Nitya ऐप और आपके फ़ोन के सिस्टम कैलेंडर में सेट हो गया है!");
+    }
+
+    function loadReminders() {
+        let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
+        const listDiv = document.getElementById('reminderList');
+
+        if(reminders.length === 0) {
+            listDiv.innerHTML = '<p style="font-size: 12px; color: #64748b;">कोई भी रिमाइंडर सेट नहीं है।</p>';
+            return;
+        }
+
+        listDiv.innerHTML = '';
+        reminders.forEach(item => {
+            listDiv.innerHTML += `
+                <div class="reminder-item">
+                    <div>
+                        <strong style="color: #38bdf8;">${item.text}</strong><br>
+                        <span style="font-size: 12px; color: #94a3b8;">📅 ${item.date} | ⏰ ${item.time}</span>
+                    </div>
+                    <button class="delete-btn" onclick="deleteReminder(${item.id})">हटाएँ</button>
+                </div>
+            `;
+        });
+    }
+
+    function deleteReminder(id) {
+        let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
+        reminders = reminders.filter(item => item.id !== id);
+        localStorage.setItem('remindersList', JSON.stringify(reminders));
+        loadReminders();
+    }
+
+    // मास्टर इन-ऐप टाइमर (जब ऐप खुला रहे)
+    function startMasterEngine() {
+        setInterval(() => {
+            const now = new Date();
+            const currentDate = now.toISOString().split('T')[0];
+            const currentTime = now.toTimeString().substring(0, 5);
+
+            let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
+            reminders.forEach(item => {
+                if (item.date === currentDate && item.time === currentTime && !item.triggered) {
+                    item.triggered = true;
+                    localStorage.setItem('remindersList', JSON.stringify(reminders));
+                    alert("⏰ Nitya Reminder:\n\n" + item.text);
+                }
+            });
+        }, 3000);
     }
 </script>
 </body>
