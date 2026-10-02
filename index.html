@@ -409,24 +409,27 @@
         startMasterEngine();
     });
 
-    // 🎯 सीधे एंड्रॉइड क्लॉक / कैलंडर खोलने का फ़ंक्शन
+    // 🎯 सीधे एंड्रॉइड फोन का 'Clock Alarm' ऐप खोलने का फ़ंक्शन
     function openSystemAlarmOrCalendar(title, dateStr, timeStr) {
         const [hours, minutes] = timeStr.split(':');
-        
-        // Android Phone Clock App Intent (सीधे अलार्म ऐप खोलने के लिए)
         const hourNum = parseInt(hours, 10);
         const minNum = parseInt(minutes, 10);
 
-        // 1. Google Calendar URL Link (सभी Android/iOS पर 100% काम करता है)
-        const startIso = `${dateStr.replace(/-/g, '')}T${hours}${minutes}00`;
-        const endIso = `${dateStr.replace(/-/g, '')}T${hours}${minutes}00`;
-        
-        const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent('Nitya App Reminder')}&add=true`;
+        // एंड्रॉइड अलार्म इंटेंट (Android Clock App)
+        // यह सीधे फोन की अलार्म स्क्रीन खोलता है
+        const alarmIntent = `intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR=${hourNum};i.android.intent.extra.alarm.MINUTES=${minNum};S.android.intent.extra.alarm.MESSAGE=${encodeURIComponent(title)};b.android.intent.extra.alarm.SKIP_UI=false;end`;
 
-        // यूजर को सीधे Google Calendar / System Alarm पर भेजें
-        window.open(googleCalendarUrl, '_blank');
+        // 1. सबसे पहले फोन के अलार्म ऐप को खोलने की कोशिश करें
+        window.location.href = alarmIntent;
+
+        // 2. अगर बैकअप के तौर पर गूगल कैलेंडर खोलना पड़े (तो 0 मिनट अलार्म पैरामीटर के साथ)
+        setTimeout(() => {
+            const startIso = `${dateStr.replace(/-/g, '')}T${hours}${minutes}00`;
+            const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${startIso}&details=${encodeURIComponent('Nitya App Alarm')}&add=true`;
+            window.open(googleCalendarUrl, '_blank');
+        }, 1500);
     }
-
+    
     function saveReminder() {
         const date = document.getElementById('reminderDate').value;
         const time = document.getElementById('reminderTime').value;
