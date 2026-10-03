@@ -372,7 +372,7 @@
         document.getElementById('aartiFullImage').src = imgSrc; // आरती overlay के लिए तैयार रखें
     }
 
-     <!-- 🔹 PART 4: Script - Direct Alarm & Calendar Trigger Engine -->
+     <!-- 🔹 PART 4: Script - Clean Silent Push Ready Engine -->
     let audioCtx = null;
 
     document.addEventListener('click', initAudioContext, { once: true });
@@ -389,54 +389,54 @@
         }
     }
 
+    // PWA Service Worker Registration & One-Time Permission
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('Service Worker Active'))
-            .catch(err => console.log('SW Error:', err));
+            .then(reg => {
+                console.log('Service Worker Registered');
+                // पहली बार में ही नोटिफिकेशन की अनुमति माँगना
+                if ("Notification" in window && Notification.permission === "default") {
+                    Notification.requestPermission();
+                }
+            })
+            .catch(err => console.log('SW Registration Error:', err));
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        if ("Notification" in window && Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
-
         if(localStorage.getItem('morningTime')) document.getElementById('morningTime').value = localStorage.getItem('morningTime');
         if(localStorage.getItem('eveningTime')) document.getElementById('eveningTime').value = localStorage.getItem('eveningTime');
         if(localStorage.getItem('nightTime')) document.getElementById('nightTime').value = localStorage.getItem('nightTime');
 
         loadDeityImage();
         loadReminders();
-        startMasterEngine();
+        startLocalTimerEngine();
     });
 
-    // 🎯 सीधे एंड्रॉइड फोन का 'Clock Alarm' ऐप खोलने का फ़ंक्शन
-    function openSystemAlarmOrCalendar(title, dateStr, timeStr) {
-        const [hours, minutes] = timeStr.split(':');
-        const hourNum = parseInt(hours, 10);
-        const minNum = parseInt(minutes, 10);
-
-        // एंड्रॉइड अलार्म इंटेंट (Android Clock App)
-        // यह सीधे फोन की अलार्म स्क्रीन खोलता है
-        const alarmIntent = `intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR=${hourNum};i.android.intent.extra.alarm.MINUTES=${minNum};S.android.intent.extra.alarm.MESSAGE=${encodeURIComponent(title)};b.android.intent.extra.alarm.SKIP_UI=false;end`;
-
-        // 1. सबसे पहले फोन के अलार्म ऐप को खोलने की कोशिश करें
-        window.location.href = alarmIntent;
-
-        // 2. अगर बैकअप के तौर पर गूगल कैलेंडर खोलना पड़े (तो 0 मिनट अलार्म पैरामीटर के साथ)
-        setTimeout(() => {
-            const startIso = `${dateStr.replace(/-/g, '')}T${hours}${minutes}00`;
-            const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${startIso}&details=${encodeURIComponent('Nitya App Alarm')}&add=true`;
-            window.open(googleCalendarUrl, '_blank');
-        }, 1500);
+    function saveMorningSettings() {
+        localStorage.setItem('morningTime', document.getElementById('morningTime').value);
+        if(recordedAudioBase64) localStorage.setItem('morningAudio', recordedAudioBase64);
+        showToast("प्रभात सेटिंग्स सेव हो गईं!");
     }
-    
+
+    function saveEveningSettings() {
+        localStorage.setItem('eveningTime', document.getElementById('eveningTime').value);
+        localStorage.setItem('aartiLink', document.getElementById('aartiLink').value);
+        showToast("संध्या आरती सेटिंग्स सेव हो गईं!");
+    }
+
+    function saveNightSettings() {
+        localStorage.setItem('nightTime', document.getElementById('nightTime').value);
+        localStorage.setItem('sleepAudioLink', document.getElementById('sleepAudioLink').value);
+        showToast("रात्रि सेटिंग्स सेव हो गईं!");
+    }
+
     function saveReminder() {
         const date = document.getElementById('reminderDate').value;
         const time = document.getElementById('reminderTime').value;
         const text = document.getElementById('reminderText').value;
 
         if(!date || !time || !text) {
-            alert("कृपया तारीख, समय और सन्देश पूरा भरें।");
+            showToast("कृपया पूरा विवरण भरें।");
             return;
         }
 
@@ -446,11 +446,7 @@
 
         document.getElementById('reminderText').value = '';
         loadReminders();
-
-        // फ़ोन के कैलेंडर/अलार्म ऐप को खोलने के लिए यूजर की अनुमति से ट्रिगर करना
-        if (confirm("रिमाइंडर ऐप में सेव हो गया है!\n\nइसे अपने फ़ोन के कैलेंडर/अलार्म में जोड़ने के लिए 'OK' दबाएं।")) {
-            openSystemAlarmOrCalendar(`⏰ Nitya: ${text}`, date, time);
-        }
+        showToast("रिमाइंडर सेव हो गया!");
     }
 
     function loadReminders() {
@@ -481,23 +477,59 @@
         reminders = reminders.filter(item => item.id !== id);
         localStorage.setItem('remindersList', JSON.stringify(reminders));
         loadReminders();
+        showToast("रिमाइंडर हटा दिया गया।");
     }
 
-    function startMasterEngine() {
+    // सिंपल इन-ऐप टोस्ट मैसेज (बिना किसी एक्स्ट्रा अलर्ट पॉप-अप के)
+    function showToast(message) {
+        let toast = document.createElement('div');
+        toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#334155; color:#fff; padding:10px 20px; border-radius:20px; font-size:13px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.3);";
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
+
+    // जब ऐप एक्टिव/खुला रहे तब के लिए लोकल इंजन
+    function startLocalTimerEngine() {
         setInterval(() => {
             const now = new Date();
             const currentDate = now.toISOString().split('T')[0];
             const currentTime = now.toTimeString().substring(0, 5);
 
+            // आरती चेक
+            const savedEveningTime = localStorage.getItem('eveningTime');
+            if (savedEveningTime === currentTime && !window.aartiDone) {
+                window.aartiDone = true;
+                triggerAartiUI();
+            }
+
+            // रिमाइंडर्स
             let reminders = JSON.parse(localStorage.getItem('remindersList') || '[]');
             reminders.forEach(item => {
                 if (item.date === currentDate && item.time === currentTime && !item.triggered) {
                     item.triggered = true;
                     localStorage.setItem('remindersList', JSON.stringify(reminders));
-                    alert("⏰ Nitya Reminder:\n\n" + item.text);
+                    showNotification("⏰ Nitya Reminder", item.text);
                 }
             });
         }, 3000);
+    }
+
+    function triggerAartiUI() {
+        document.getElementById('aartiOverlay').style.display = 'block';
+        showNotification("॥ संध्या आरती ॥", "जय श्री कृष्णा! आरती का समय हो गया है।");
+    }
+
+    function closeAartiMode() {
+        document.getElementById('aartiOverlay').style.display = 'none';
+    }
+
+    function showNotification(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(title, { body: body, icon: 'icon.png' });
+            });
+        }
     }
 </script>
 </body>
